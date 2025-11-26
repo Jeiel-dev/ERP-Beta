@@ -101,10 +101,10 @@ export const Dashboard: React.FC = () => {
       {user?.role === UserRole.MANAGER && (
         <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 mt-8 transition-colors">
           <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-6">Últimas Vendas Realizadas</h2>
-          {/* Explicit width and height style to prevent ResponsiveContainer calculation errors */}
-          <div className="h-80 w-full" style={{ width: '100%', height: 320, minHeight: 320 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
+          
+          <div className="w-full min-w-0">
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#374151" opacity={0.2} />
                 <XAxis dataKey="name" tick={{fontSize: 12, fill: '#9ca3af'}} />
                 <YAxis tick={{fontSize: 12, fill: '#9ca3af'}} />
