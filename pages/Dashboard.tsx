@@ -35,7 +35,7 @@ export const Dashboard: React.FC = () => {
     .filter(s => s.status === SaleStatus.COMPLETED)
     .slice(-10)
     .map(s => ({
-      name: new Date(s.finishedAt!).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}),
+      name: s.finishedAt ? new Date(s.finishedAt).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) : '-',
       valor: s.totalValue
     }));
 
@@ -101,7 +101,8 @@ export const Dashboard: React.FC = () => {
       {user?.role === UserRole.MANAGER && (
         <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 mt-8 transition-colors">
           <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-6">Últimas Vendas Realizadas</h2>
-          <div className="h-80 w-full">
+          {/* Explicit width and height style to prevent ResponsiveContainer calculation errors */}
+          <div className="h-80 w-full" style={{ width: '100%', height: 320, minHeight: 320 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#374151" opacity={0.2} />

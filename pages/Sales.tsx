@@ -1157,7 +1157,7 @@ export const Sales: React.FC = () => {
                  </div>
                  { (tempDiscountPercent > 6) && (
                    <div className="mb-6 bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-100 dark:border-red-900/30">
-                      <label className="block text-xs font-bold text-red-600 dark:text-red-400 mb-1">Token Gerencial Obrigatório (> 6%)</label>
+                      <label className="block text-xs font-bold text-red-600 dark:text-red-400 mb-1">Token Gerencial Obrigatório (&gt; 6%)</label>
                       <input type="password" className="w-full border border-gray-300 dark:border-slate-600 rounded p-2 text-center bg-white dark:bg-slate-700 dark:text-white" placeholder="******" value={discountToken} onChange={e => setDiscountToken(e.target.value)} />
                    </div>
                  )}
