@@ -35,8 +35,8 @@ export const Login: React.FC = () => {
       <div className="bg-white dark:bg-slate-800 p-8 rounded-xl shadow-lg w-full max-w-md transition-colors duration-200">
         <div className="text-center mb-8">
           <img 
-            src="https://placehold.co/600x150/1e293b/FFF?text=LOGO+ERP&font=montserrat" 
-            alt="Logo ERP" 
+            src="https://placehold.co/600x150/1e293b/FFF?text=ERP+SALES&font=montserrat" 
+            alt="Logo ERP SALES" 
             className="h-20 mx-auto mb-4 object-contain dark:opacity-90" 
           />
           <p className="text-gray-500 dark:text-gray-400 mt-2">Acesse o sistema de gestão</p>

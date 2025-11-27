@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { User, AuthState } from '../types';
 import { getUsers } from '../services/mockBackend';
 
@@ -10,15 +10,18 @@ interface AuthContextType extends AuthState {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [auth, setAuth] = useState<AuthState>({ user: null, isAuthenticated: false });
-
-  // Restore session from local storage (UI persistence only)
-  useEffect(() => {
-    const storedUser = localStorage.getItem('current_user');
-    if (storedUser) {
-      setAuth({ user: JSON.parse(storedUser), isAuthenticated: true });
+  // Initialize state lazily to prevent redirect on reload
+  const [auth, setAuth] = useState<AuthState>(() => {
+    try {
+      const storedUser = localStorage.getItem('current_user');
+      if (storedUser) {
+        return { user: JSON.parse(storedUser), isAuthenticated: true };
+      }
+    } catch (e) {
+      console.error("Failed to restore auth session", e);
     }
-  }, []);
+    return { user: null, isAuthenticated: false };
+  });
 
   const login = async (username: string, pass: string): Promise<boolean> => {
     try {
