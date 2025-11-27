@@ -1,4 +1,5 @@
-import { User, UserRole, Product, Sale, SaleStatus, UnitConfig, SaleItem } from '../types';
+
+import { User, UserRole, Product, Sale, SaleStatus, UnitConfig, SaleItem, Seller } from '../types';
 import { supabase } from './supabase';
 
 // --- MAPPERS (DB snake_case -> App camelCase) ---
@@ -10,6 +11,12 @@ const mapUser = (data: any): User => ({
   role: data.role as UserRole,
   active: data.active,
   password: data.password
+});
+
+const mapSeller = (data: any): Seller => ({
+  id: data.id,
+  name: data.name,
+  active: data.active
 });
 
 const mapProduct = (data: any): Product => ({
@@ -28,6 +35,8 @@ const mapSale = (data: any): Sale => ({
   id: data.id,
   sellerId: data.seller_id,
   sellerName: data.seller_name,
+  salespersonId: data.salesperson_id,
+  salespersonName: data.salesperson_name,
   cashierId: data.cashier_id,
   cashierName: data.cashier_name,
   items: data.items || [], // JSONB field
@@ -123,6 +132,58 @@ export const deleteUser = async (id: string): Promise<void> => {
   if (error) throw new Error(error.message);
 };
 
+// --- SELLERS (SUB-SALESPERSONS) ---
+
+export const getSellers = async (): Promise<Seller[]> => {
+  const { data, error } = await supabase.from('sellers').select('*').order('name');
+  if (error) {
+    console.error('Error fetching sellers:', error);
+    return [];
+  }
+  return data.map(mapSeller);
+};
+
+export const createSeller = async (name: string): Promise<Seller> => {
+  const { data, error } = await supabase.from('sellers').insert({
+    name,
+    active: true
+  }).select().single();
+
+  if (error) throw new Error(error.message);
+  return mapSeller(data);
+};
+
+export const updateSeller = async (seller: Seller): Promise<Seller> => {
+  const { data, error } = await supabase.from('sellers').update({
+    name: seller.name,
+    active: seller.active
+  }).eq('id', seller.id).select().single();
+
+  if (error) throw new Error(error.message);
+  return mapSeller(data);
+};
+
+export const deleteSeller = async (id: string): Promise<void> => {
+  const { error } = await supabase.from('sellers').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+};
+
+export const toggleSellerActive = async (id: string): Promise<Seller> => {
+  const { data: current } = await supabase.from('sellers').select('active').eq('id', id).single();
+  if (!current) throw new Error("Vendedor não encontrado");
+
+  const { data, error } = await supabase
+    .from('sellers')
+    .update({ active: !current.active })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return mapSeller(data);
+};
+
+
 // --- PRODUCTS ---
 
 export const getProducts = async (): Promise<Product[]> => {
@@ -203,6 +264,8 @@ export const createSale = async (saleData: Partial<Sale>): Promise<Sale> => {
   const payload = {
     seller_id: saleData.sellerId,
     seller_name: saleData.sellerName,
+    salesperson_id: saleData.salespersonId,
+    salesperson_name: saleData.salespersonName,
     client_name: saleData.clientName,
     status: saleData.status || SaleStatus.PENDING,
     total_value: saleData.totalValue,
@@ -241,6 +304,8 @@ export const updateSale = async (saleData: Partial<Sale> & { id: string }): Prom
   if (saleData.customerEmail !== undefined) payload.customer_email = saleData.customerEmail;
   if (saleData.purchaseOrder !== undefined) payload.purchase_order = saleData.purchaseOrder;
   if (saleData.cashierIdent !== undefined) payload.cashier_ident = saleData.cashierIdent;
+  if (saleData.salespersonId !== undefined) payload.salesperson_id = saleData.salespersonId;
+  if (saleData.salespersonName !== undefined) payload.salesperson_name = saleData.salespersonName;
   if (saleData.status) payload.status = saleData.status;
 
   const { data, error } = await supabase
@@ -283,8 +348,6 @@ export const completeSale = async (saleId: string, cashierId: string, cashierNam
   }
 
   // 3. Stock Validation & Update (Server-side Check)
-  // Note: For high concurrency, this block should be a PostgreSQL Function (RPC).
-  // We perform a check here to minimize negative stock risks.
   for (const item of finalItems) {
     const { data: prod } = await supabase.from('products').select('stock, name').eq('id', item.productId).single();
     

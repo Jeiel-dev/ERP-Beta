@@ -1,3 +1,4 @@
+
 export enum UserRole {
   MANAGER = 'MANAGER',
   SALESPERSON = 'SALESPERSON',
@@ -11,6 +12,12 @@ export interface User {
   role: UserRole;
   active: boolean;
   password?: string; // Only used for custom auth check
+}
+
+export interface Seller {
+  id: string;
+  name: string;
+  active: boolean;
 }
 
 export interface Product {
@@ -59,8 +66,10 @@ export interface PaymentDetails {
 
 export interface Sale {
   id: string;
-  sellerId: string;
+  sellerId: string; // ID of the logged in user who created the record
   sellerName: string;
+  salespersonId?: string; // ID of the actual salesperson (sub-seller)
+  salespersonName?: string;
   cashierId?: string;
   cashierName?: string;
   items: SaleItem[];

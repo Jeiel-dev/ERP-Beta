@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -9,6 +10,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Products } from './pages/Products';
 import { Sales } from './pages/Sales';
 import { Users } from './pages/Users';
+import { Sellers } from './pages/Sellers';
 import { UserRole } from './types';
 
 const App: React.FC = () => {
@@ -35,6 +37,12 @@ const App: React.FC = () => {
               <Route path="/sales" element={
                 <Layout>
                   <Sales />
+                </Layout>
+              } />
+              
+              <Route path="/sellers" element={
+                <Layout allowedRoles={[UserRole.MANAGER]}>
+                  <Sellers />
                 </Layout>
               } />
               

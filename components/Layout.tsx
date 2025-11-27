@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -13,7 +14,8 @@ import {
   Moon,
   Sun,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Briefcase
 } from 'lucide-react';
 import { Link, useLocation, Navigate } from 'react-router-dom';
 
@@ -63,6 +65,12 @@ export const Layout: React.FC<LayoutProps> = ({ children, allowedRoles }) => {
       path: '/products', 
       icon: Package, 
       roles: [UserRole.MANAGER, UserRole.SALESPERSON] 
+    },
+    { 
+      label: 'Equipe de Vendas', 
+      path: '/sellers', 
+      icon: Briefcase, 
+      roles: [UserRole.MANAGER] 
     },
     { 
       label: 'Usuários', 

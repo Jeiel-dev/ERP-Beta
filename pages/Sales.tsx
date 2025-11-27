@@ -1,8 +1,9 @@
+
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Product, Sale, SaleItem, SaleStatus, UserRole, PaymentDetails } from '../types';
-import { getProducts, getSales, createSale, updateSale, completeSale, cancelSale } from '../services/mockBackend';
-import { Search, PlusCircle, Check, Trash2, CheckCircle, Clock, XCircle, User, CreditCard, DollarSign, Edit2, MapPin, Lock, X, FileText, AlertTriangle, Eye, ArrowRight } from 'lucide-react';
+import { Product, Sale, SaleItem, SaleStatus, UserRole, PaymentDetails, Seller } from '../types';
+import { getProducts, getSales, createSale, updateSale, completeSale, cancelSale, getSellers } from '../services/mockBackend';
+import { Search, PlusCircle, Check, Trash2, CheckCircle, Clock, XCircle, User, CreditCard, DollarSign, Edit2, MapPin, Lock, X, FileText, AlertTriangle, Eye, ArrowRight, Briefcase } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
 // Helper functions for currency
@@ -21,11 +22,17 @@ const generateLocalId = () => Math.random().toString(36).substr(2, 9);
 export const Sales: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<'new' | 'pending' | 'history'>('new');
+  
+  // Initialize Active Tab based on User Role
+  // If user is strictly CASHIER, default to 'pending' (Frente de Caixa). Others default to 'new' (POS).
+  const [activeTab, setActiveTab] = useState<'new' | 'pending' | 'history'>(() => {
+    return user?.role === UserRole.CASHIER ? 'pending' : 'new';
+  });
   
   // Data State
   const [products, setProducts] = useState<Product[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
+  const [sellers, setSellers] = useState<Seller[]>([]);
   const [loading, setLoading] = useState(false);
 
   // --- POS STATE (New/Edit Sale) ---
@@ -33,6 +40,7 @@ export const Sales: React.FC = () => {
   const [isCashierConfirming, setIsCashierConfirming] = useState(false);
   const [cart, setCart] = useState<SaleItem[]>([]);
   const [posClient, setPosClient] = useState('');
+  const [selectedSellerId, setSelectedSellerId] = useState<string>(''); // For the dropdown
   
   // Product Search State
   const [searchCode, setSearchCode] = useState('');
@@ -86,9 +94,21 @@ export const Sales: React.FC = () => {
 
   const refreshData = async () => {
     setLoading(true);
-    const [pData, sData] = await Promise.all([getProducts(), getSales()]);
+    const [pData, sData, sellersData] = await Promise.all([getProducts(), getSales(), getSellers()]);
     setProducts(pData);
-    setSales(sData.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+    setSellers(sellersData.filter(s => s.active));
+    
+    // Custom Sort: PENDING first, then by Date descending
+    const sortedSales = sData.sort((a, b) => {
+      // 1. Priority: PENDING status
+      if (a.status === SaleStatus.PENDING && b.status !== SaleStatus.PENDING) return -1;
+      if (a.status !== SaleStatus.PENDING && b.status === SaleStatus.PENDING) return 1;
+
+      // 2. Secondary: Date (Newest first)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    setSales(sortedSales);
     setLoading(false);
   };
 
@@ -291,6 +311,7 @@ export const Sales: React.FC = () => {
     setEmail(sale.customerEmail || '');
     setPurchaseOrder(sale.purchaseOrder || '');
     setCashierIdent(sale.cashierIdent || '');
+    setSelectedSellerId(sale.salespersonId || '');
     
     setActiveTab('new');
   };
@@ -318,11 +339,17 @@ export const Sales: React.FC = () => {
     setCashierIdent('');
     setSearchCode('');
     setSelectedProduct(null);
+    setSelectedSellerId('');
   };
 
   const handleSubmitSale = useCallback(async (asBudget = false) => {
     if (cart.length === 0) {
       toast.error("Adicione produtos à venda.");
+      return;
+    }
+
+    if (!selectedSellerId) {
+      toast.error("Selecione o vendedor responsável.");
       return;
     }
 
@@ -350,11 +377,18 @@ export const Sales: React.FC = () => {
        return;
     }
 
+    const sellerInfo = sellers.find(s => s.id === selectedSellerId);
+    
+    // Default to 'CONSUMIDOR FINAL' if client name is empty
+    const finalClientName = posClient.trim() === '' ? 'CONSUMIDOR FINAL' : posClient;
+
     const salePayload: Partial<Sale> = {
       items: cart,
-      sellerId: user.id,
+      sellerId: user.id, // Who is creating the record (User)
       sellerName: user.name,
-      clientName: posClient,
+      salespersonId: selectedSellerId, // Who is getting the commission (Seller)
+      salespersonName: sellerInfo?.name || 'Desconhecido',
+      clientName: finalClientName,
       discount: posDiscount, 
       freight: posFreight,
       otherCosts: posOther,
@@ -386,7 +420,7 @@ export const Sales: React.FC = () => {
       console.error(error);
       toast.error('Erro ao processar venda.');
     }
-  }, [cart, user, posClient, posDiscount, posFreight, posOther, payments, creditInstallments, totalGeneral, obs, deliveryAddress, email, purchaseOrder, cashierIdent, editingSaleId, toast]);
+  }, [cart, user, posClient, posDiscount, posFreight, posOther, payments, creditInstallments, totalGeneral, obs, deliveryAddress, email, purchaseOrder, cashierIdent, editingSaleId, toast, selectedSellerId, sellers]);
 
   const handleCashierFinalize = async () => {
     if (!editingSaleId || !user?.id) return;
@@ -913,9 +947,21 @@ export const Sales: React.FC = () => {
             </div>
              <div>
               <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 block uppercase">Vendedor</label>
-              <div className="w-full border border-gray-300 dark:border-slate-600 bg-gray-100 dark:bg-slate-700 rounded px-2 py-2 text-sm text-gray-700 dark:text-white uppercase flex justify-between items-center">
-                <span>{user?.name}</span>
-                <User size={14} className="text-gray-400 dark:text-gray-300" />
+              <div className="w-full relative">
+                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-500 dark:text-gray-400">
+                    <Briefcase size={14} />
+                 </div>
+                 <select 
+                    value={selectedSellerId}
+                    onChange={(e) => setSelectedSellerId(e.target.value)}
+                    disabled={isCashierConfirming}
+                    className="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 rounded px-2 py-2 text-sm text-gray-700 dark:text-white uppercase appearance-none focus:outline-none focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-slate-800"
+                 >
+                    <option value="" disabled>Selecione o vendedor...</option>
+                    {sellers.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                 </select>
               </div>
             </div>
           </div>
@@ -965,6 +1011,9 @@ export const Sales: React.FC = () => {
                   <span className="text-sm text-gray-500 dark:text-gray-400">{new Date(sale.createdAt).toLocaleString()}</span>
                   <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{sale.clientName || 'Cliente não identificado'}</span>
                 </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-2 flex items-center">
+                   <Briefcase size={12} className="mr-1" /> Vendedor: <strong className="ml-1 text-gray-700 dark:text-gray-300">{sale.salespersonName || sale.sellerName}</strong>
+                </div>
                 <div className="space-y-1 bg-gray-50 dark:bg-slate-700/50 p-3 rounded text-sm">
                   {sale.items.slice(0, 3).map((item, idx) => (
                     <div key={item.internalId || idx} className="flex justify-between border-b border-gray-100 dark:border-slate-600 last:border-0 pb-1 last:pb-0 text-gray-700 dark:text-gray-300">
@@ -1008,6 +1057,7 @@ export const Sales: React.FC = () => {
                 <tr>
                   <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">ID / Data</th>
                   <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Cliente</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Vendedor</th>
                   <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Status</th>
                   <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Total</th>
                   <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 text-right">Ações</th>
@@ -1023,6 +1073,9 @@ export const Sales: React.FC = () => {
                     <td className="px-6 py-4 text-sm font-medium text-gray-800 dark:text-gray-200">
                       {sale.clientName || '-'}
                     </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                      {sale.salespersonName || sale.sellerName}
+                    </td>
                     <td className="px-6 py-4">
                       {sale.status === SaleStatus.COMPLETED && <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400"><CheckCircle size={12} className="mr-1"/> Concluída</span>}
                       {sale.status === SaleStatus.PENDING && <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-400"><Clock size={12} className="mr-1"/> Pendente</span>}
@@ -1031,6 +1084,29 @@ export const Sales: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-sm font-bold text-gray-900 dark:text-white">R$ {formatMoney(sale.totalValue)}</td>
                     <td className="px-6 py-4 text-right space-x-2">
+                      {/* 1. Edit */}
+                      {isSalesperson && sale.status !== SaleStatus.COMPLETED && sale.status !== SaleStatus.CANCELLED && (
+                        <button
+                          onClick={() => handleEditSale(sale)}
+                          title="Editar Venda"
+                          className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                      )}
+                      
+                      {/* 2. Cancel */}
+                      {isManager && sale.status !== SaleStatus.CANCELLED && (
+                        <button
+                          onClick={() => requestCancelSale(sale)}
+                          title="Cancelar Venda"
+                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                        >
+                          <XCircle size={18} />
+                        </button>
+                      )}
+
+                      {/* 3. View */}
                       <button 
                         onClick={() => handleViewSale(sale)}
                         className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
@@ -1038,22 +1114,6 @@ export const Sales: React.FC = () => {
                       >
                         <Eye size={18} />
                       </button>
-                      {isSalesperson && sale.status !== SaleStatus.COMPLETED && sale.status !== SaleStatus.CANCELLED && (
-                        <button
-                          onClick={() => handleEditSale(sale)}
-                          className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-xs font-medium border border-blue-200 dark:border-blue-900/50 px-3 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                        >
-                          Editar
-                        </button>
-                      )}
-                      {isManager && sale.status !== SaleStatus.CANCELLED && (
-                        <button
-                          onClick={() => requestCancelSale(sale)}
-                          className="inline-flex items-center text-red-600 hover:text-red-800 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 px-3 py-1 rounded transition-colors text-xs font-bold border border-red-200 dark:border-red-900/50"
-                        >
-                          <XCircle size={14} className="mr-1"/> Cancelar
-                        </button>
-                      )}
                     </td>
                   </tr>
                 ))}
@@ -1211,7 +1271,10 @@ export const Sales: React.FC = () => {
             <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center bg-gray-50 dark:bg-slate-900">
               <div>
                  <h3 className="font-bold text-gray-800 dark:text-white text-lg">Detalhes da Venda #{saleToView.id.slice(0,8)}</h3>
-                 <div className="text-xs text-gray-500 dark:text-gray-400">{new Date(saleToView.createdAt).toLocaleString()}</div>
+                 <div className="text-xs text-gray-500 dark:text-gray-400">
+                    <div>Data: {new Date(saleToView.createdAt).toLocaleString()}</div>
+                    <div>Vendedor: <span className="text-gray-700 dark:text-gray-300 font-bold">{saleToView.salespersonName || saleToView.sellerName}</span></div>
+                 </div>
               </div>
               <button onClick={() => setViewModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><X size={24} /></button>
             </div>
