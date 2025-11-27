@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { Product, UserRole, UnitConfig } from '../types';
 import { getProducts, saveProduct, deleteProduct, toggleProductActive, getUnits, toggleUnitActive } from '../services/mockBackend';
 import { Plus, Edit2, Trash2, Search, Package, Power, AlertTriangle, Filter, Settings } from 'lucide-react';
@@ -17,10 +18,13 @@ const parseMoney = (value: string) => {
 
 export const Products: React.FC = () => {
   const { user } = useAuth();
+  const { layoutMode } = useTheme();
   const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [units, setUnits] = useState<UnitConfig[]>([]);
   
+  const isModern = layoutMode === 'modern';
+
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
@@ -136,21 +140,21 @@ export const Products: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center">
-          <Package className="mr-2" /> Catálogo de Produtos
+        <h1 className={`text-2xl font-bold flex items-center ${isModern ? 'text-gray-900 dark:text-white' : 'text-gray-800 dark:text-white'}`}>
+          <Package className={`mr-2 ${isModern ? 'text-indigo-600 dark:text-indigo-400' : ''}`} /> Catálogo de Produtos
         </h1>
         {isManager && (
           <div className="flex gap-2">
             <button 
               onClick={() => setUnitsModalOpen(true)}
-              className="bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 flex items-center shadow-sm transition-colors"
+              className={`${isModern ? 'bg-white dark:bg-[#1a1c29] text-gray-700 dark:text-gray-300 border border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl' : 'bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-slate-600 rounded-lg'} px-3 py-2 flex items-center shadow-sm transition-colors`}
               title="Configurar Unidades"
             >
               <Settings size={18} />
             </button>
             <button 
               onClick={() => handleOpenModal()}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center shadow-md transition-colors"
+              className={`${isModern ? 'bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-500/20' : 'bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md'} text-white px-4 py-2 flex items-center transition-colors`}
             >
               <Plus size={18} className="mr-2" /> Novo Produto
             </button>
@@ -159,13 +163,17 @@ export const Products: React.FC = () => {
       </div>
 
       {/* Search and Filters Bar */}
-      <div className="flex flex-col md:flex-row gap-4">
+      <div className={`flex flex-col md:flex-row gap-4 ${isModern ? 'bg-white dark:bg-[#1a1c29] p-2 rounded-2xl shadow-sm border border-gray-100 dark:border-white/5' : ''}`}>
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={20} />
           <input 
             type="text" 
             placeholder="Buscar por nome ou código..." 
-            className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white transition-colors"
+            className={`w-full pl-10 pr-4 py-3 outline-none transition-colors
+              ${isModern 
+                ? 'bg-gray-50 dark:bg-[#0b0c15] rounded-xl border-transparent focus:bg-white dark:focus:bg-[#121420] focus:ring-2 focus:ring-indigo-100 dark:text-white' 
+                : 'border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 dark:text-white'
+              }`}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -179,7 +187,11 @@ export const Products: React.FC = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="w-full pl-9 pr-4 py-3 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white appearance-none cursor-pointer"
+              className={`w-full pl-9 pr-4 py-3 outline-none appearance-none cursor-pointer transition-colors
+                 ${isModern 
+                    ? 'bg-gray-50 dark:bg-[#0b0c15] rounded-xl border-transparent focus:ring-2 focus:ring-indigo-100 dark:text-white' 
+                    : 'border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 dark:text-white'
+                 }`}
             >
               <option value="active">Ativos</option>
               <option value="inactive">Inativos</option>
@@ -191,7 +203,11 @@ export const Products: React.FC = () => {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white appearance-none cursor-pointer"
+              className={`w-full px-4 py-3 outline-none appearance-none cursor-pointer transition-colors
+                 ${isModern 
+                    ? 'bg-gray-50 dark:bg-[#0b0c15] rounded-xl border-transparent focus:ring-2 focus:ring-indigo-100 dark:text-white' 
+                    : 'border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 dark:text-white'
+                 }`}
             >
               <option value="all">Todas Categorias</option>
               {categories.map(cat => (
@@ -203,26 +219,26 @@ export const Products: React.FC = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden transition-colors">
+      <div className={`${isModern ? 'bg-white dark:bg-[#1a1c29] rounded-3xl shadow-xl shadow-indigo-500/5 border border-gray-100 dark:border-white/5' : 'bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700'} overflow-hidden transition-colors`}>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-gray-50 dark:bg-slate-700 border-b border-gray-100 dark:border-slate-600">
+            <thead className={`${isModern ? 'bg-gray-50 dark:bg-[#121420] text-gray-900 dark:text-white' : 'bg-gray-50 dark:bg-slate-700 text-gray-600 dark:text-gray-300'} border-b border-gray-100 dark:border-slate-600/50`}>
               <tr>
-                <th className="px-6 py-4 font-semibold text-gray-600 dark:text-gray-300 text-sm">Status</th>
-                <th className="px-6 py-4 font-semibold text-gray-600 dark:text-gray-300 text-sm">Código</th>
-                <th className="px-6 py-4 font-semibold text-gray-600 dark:text-gray-300 text-sm">Produto</th>
-                <th className="px-6 py-4 font-semibold text-gray-600 dark:text-gray-300 text-sm">Categoria</th>
-                <th className="px-6 py-4 font-semibold text-gray-600 dark:text-gray-300 text-sm">Preço</th>
-                <th className="px-6 py-4 font-semibold text-gray-600 dark:text-gray-300 text-sm">Estoque</th>
-                {isManager && <th className="px-6 py-4 font-semibold text-gray-600 dark:text-gray-300 text-sm text-right">Ações</th>}
+                <th className="px-6 py-4 font-semibold text-sm">Status</th>
+                <th className="px-6 py-4 font-semibold text-sm">Código</th>
+                <th className="px-6 py-4 font-semibold text-sm">Produto</th>
+                <th className="px-6 py-4 font-semibold text-sm">Categoria</th>
+                <th className="px-6 py-4 font-semibold text-sm">Preço</th>
+                <th className="px-6 py-4 font-semibold text-sm">Estoque</th>
+                {isManager && <th className="px-6 py-4 font-semibold text-sm text-right">Ações</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+            <tbody className={`divide-y ${isModern ? 'divide-gray-50 dark:divide-white/5' : 'divide-gray-100 dark:divide-slate-700'}`}>
               {filteredProducts.map(product => (
-                <tr key={product.id} className={`hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${!product.active ? 'opacity-60 bg-gray-50 dark:bg-slate-800/50' : ''}`}>
+                <tr key={product.id} className={`hover:bg-gray-50 dark:hover:bg-white/5 transition-colors ${!product.active ? 'opacity-60 bg-gray-50 dark:bg-slate-800/50' : ''}`}>
                   <td className="px-6 py-4">
                      <div className="flex items-center">
-                        <span className={`inline-block w-2 h-2 rounded-full mr-2 ${product.active ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                        <span className={`inline-block w-2 h-2 rounded-full mr-2 ${product.active ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
                         <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{product.active ? 'Ativo' : 'Inativo'}</span>
                      </div>
                   </td>
@@ -239,8 +255,8 @@ export const Products: React.FC = () => {
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                       product.stock > 10 
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
-                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                        ? (isModern ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400')
+                        : (isModern ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400')
                     }`}>
                       {product.stock} {product.unit || 'UNID'}
                     </span>
@@ -249,7 +265,7 @@ export const Products: React.FC = () => {
                     <td className="px-6 py-4 text-right space-x-2">
                        <button 
                         onClick={() => handleToggleActive(product.id, product.active)}
-                        className={`p-1 rounded transition-colors ${product.active ? 'text-green-600 hover:text-green-800 dark:text-green-400' : 'text-gray-400 hover:text-gray-600'}`}
+                        className={`p-1 rounded transition-colors ${product.active ? 'text-emerald-600 hover:text-emerald-800 dark:text-emerald-400' : 'text-gray-400 hover:text-gray-600'}`}
                         title={product.active ? "Desativar Produto" : "Ativar Produto"}
                       >
                         <Power size={18} />
@@ -285,7 +301,7 @@ export const Products: React.FC = () => {
       {/* Product Form Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-lg overflow-hidden border dark:border-slate-700">
+          <div className={`bg-white dark:bg-slate-800 ${isModern ? 'rounded-2xl' : 'rounded-xl'} shadow-xl w-full max-w-lg overflow-hidden border dark:border-slate-700`}>
             <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center">
               <h3 className="text-lg font-bold text-gray-800 dark:text-white">{editingProduct ? 'Editar Produto' : 'Novo Produto'}</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
@@ -347,7 +363,7 @@ export const Products: React.FC = () => {
               </div>
               <div className="pt-4 flex justify-end space-x-3">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">Cancelar</button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Salvar</button>
+                <button type="submit" className={`${isModern ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-blue-600 hover:bg-blue-700'} px-4 py-2 text-white rounded-lg transition-colors`}>Salvar</button>
               </div>
             </form>
           </div>
@@ -357,7 +373,7 @@ export const Products: React.FC = () => {
       {/* Units Management Modal */}
       {unitsModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-sm overflow-hidden border dark:border-slate-700">
+          <div className={`bg-white dark:bg-slate-800 ${isModern ? 'rounded-2xl' : 'rounded-lg'} shadow-xl w-full max-w-sm overflow-hidden border dark:border-slate-700`}>
              <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center">
               <h3 className="text-lg font-bold text-gray-800 dark:text-white">Unidades de Medida</h3>
               <button onClick={() => setUnitsModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
@@ -392,7 +408,7 @@ export const Products: React.FC = () => {
       {/* Delete Confirmation Modal */}
       {deleteModalOpen && productToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md overflow-hidden border dark:border-slate-700 animate-in zoom-in duration-200">
+          <div className={`bg-white dark:bg-slate-800 ${isModern ? 'rounded-2xl' : 'rounded-lg'} shadow-xl w-full max-w-md overflow-hidden border dark:border-slate-700 animate-in zoom-in duration-200`}>
             <div className="p-6 text-center">
               <div className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle size={32} />

@@ -1,5 +1,5 @@
-
 import React, { useEffect, useState } from 'react';
+import { useTheme } from '../context/ThemeContext';
 import { Seller } from '../types';
 import { getSellers, createSeller, updateSeller, deleteSeller, toggleSellerActive } from '../services/mockBackend';
 import { Users, Trash2, Edit, AlertTriangle, Plus, Power } from 'lucide-react';
@@ -7,8 +7,11 @@ import { useToast } from '../context/ToastContext';
 
 export const Sellers: React.FC = () => {
   const { toast } = useToast();
+  const { layoutMode } = useTheme();
   const [sellers, setSellers] = useState<Seller[]>([]);
   
+  const isModern = layoutMode === 'modern';
+
   // Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -91,33 +94,33 @@ export const Sellers: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center">
-          <Users className="mr-2" /> Equipe de Vendas
+        <h1 className={`text-2xl font-bold flex items-center ${isModern ? 'text-gray-900 dark:text-white' : 'text-gray-800 dark:text-white'}`}>
+          <Users className={`mr-2 ${isModern ? 'text-indigo-600 dark:text-indigo-400' : ''}`} /> Equipe de Vendas
         </h1>
         <button 
           onClick={() => handleOpenModal()}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center shadow-sm transition-colors"
+          className={`${isModern ? 'bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-500/20' : 'bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm'} text-white px-4 py-2 flex items-center transition-colors`}
         >
           <Plus size={18} className="mr-2" /> Novo Vendedor
         </button>
       </div>
       <p className="text-gray-500 dark:text-gray-400">Gerencie os vendedores que aparecerão como opção na tela de vendas.</p>
 
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
+      <div className={`${isModern ? 'bg-white dark:bg-[#1a1c29] border border-gray-100 dark:border-white/5 shadow-xl shadow-indigo-500/5 rounded-3xl' : 'bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700'} overflow-hidden transition-colors`}>
         <table className="w-full text-left">
-          <thead className="bg-gray-50 dark:bg-slate-700 border-b border-gray-100 dark:border-slate-600">
+          <thead className={`${isModern ? 'bg-gray-50 dark:bg-[#121420] text-gray-900 dark:text-white' : 'bg-gray-50 dark:bg-slate-700 text-gray-600 dark:text-gray-300'} border-b border-gray-100 dark:border-slate-600/50`}>
             <tr>
-              <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Status</th>
-              <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Nome</th>
-              <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300 text-right">Ações</th>
+              <th className="px-6 py-4 text-sm font-semibold">Status</th>
+              <th className="px-6 py-4 text-sm font-semibold">Nome</th>
+              <th className="px-6 py-4 text-sm font-semibold text-right">Ações</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+          <tbody className={`divide-y ${isModern ? 'divide-gray-50 dark:divide-white/5' : 'divide-gray-100 dark:divide-slate-700'}`}>
             {sellers.map(seller => (
-              <tr key={seller.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+              <tr key={seller.id} className={`hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors`}>
                  <td className="px-6 py-4">
                      <div className="flex items-center">
-                        <span className={`inline-block w-2 h-2 rounded-full mr-2 ${seller.active ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                        <span className={`inline-block w-2 h-2 rounded-full mr-2 ${seller.active ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
                         <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{seller.active ? 'Ativo' : 'Inativo'}</span>
                      </div>
                   </td>
@@ -125,7 +128,7 @@ export const Sellers: React.FC = () => {
                 <td className="px-6 py-4 text-right space-x-2">
                    <button 
                       onClick={() => handleToggleActive(seller.id, seller.active)}
-                      className={`p-1 rounded transition-colors ${seller.active ? 'text-green-600 hover:text-green-800 dark:text-green-400' : 'text-gray-400 hover:text-gray-600'}`}
+                      className={`p-1 rounded transition-colors ${seller.active ? 'text-emerald-600 hover:text-emerald-800 dark:text-emerald-400' : 'text-gray-400 hover:text-gray-600'}`}
                       title={seller.active ? "Desativar" : "Ativar"}
                     >
                       <Power size={18} />
@@ -153,7 +156,7 @@ export const Sellers: React.FC = () => {
       {/* Form Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-sm border dark:border-slate-700">
+          <div className={`bg-white dark:bg-slate-800 ${isModern ? 'rounded-2xl' : 'rounded-xl'} shadow-xl w-full max-w-sm border dark:border-slate-700`}>
             <div className="px-6 py-4 border-b dark:border-slate-700 flex justify-between items-center">
               <h3 className="font-bold text-gray-800 dark:text-white">{editingSeller ? 'Editar Vendedor' : 'Novo Vendedor'}</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl">&times;</button>
@@ -164,7 +167,7 @@ export const Sellers: React.FC = () => {
                 <input type="text" required className="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 dark:text-white"
                   value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
               </div>
-              <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-bold">Salvar</button>
+              <button type="submit" className={`w-full ${isModern ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-blue-600 hover:bg-blue-700'} text-white py-2 rounded-lg font-bold transition-colors`}>Salvar</button>
             </form>
           </div>
         </div>
@@ -173,7 +176,7 @@ export const Sellers: React.FC = () => {
       {/* Delete Confirmation Modal */}
       {deleteModalOpen && sellerToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md overflow-hidden border dark:border-slate-700 animate-in zoom-in duration-200">
+          <div className={`bg-white dark:bg-slate-800 ${isModern ? 'rounded-2xl' : 'rounded-lg'} shadow-xl w-full max-w-md overflow-hidden border dark:border-slate-700 animate-in zoom-in duration-200`}>
             <div className="p-6 text-center">
               <div className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle size={32} />
